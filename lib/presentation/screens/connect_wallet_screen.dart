@@ -6,6 +6,8 @@ import '../../core/config/env.dart';
 import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../blocs/wallet/wallet_bloc.dart';
+import '../../core/di/injection_container.dart';
+import '../../data/datasources/datasources.dart';
 import 'projects/project_list_screen.dart';
 
 class ConnectWalletScreen extends StatefulWidget {
@@ -41,12 +43,39 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
         ),
       ),
     );
+
     await _appKitModal!.init();
+    
+    // Inject _appKitModal to data source
+    sl<WalletConnectDataSource>().setModal(_appKitModal!);
+
+    // Listen to connection events
+    _appKitModal!.onModalConnect.subscribe((ModalConnect? args) {
+      if (mounted) {
+        context.read<WalletBloc>().add(WalletCheckStatusEvent());
+      }
+    });
+
+    _appKitModal!.onModalDisconnect.subscribe((ModalDisconnect? args) {
+      if (mounted) {
+        context.read<WalletBloc>().add(WalletDisconnectEvent());
+      }
+    });
+
     setState(() => _appKitInitialized = true);
+
+    // Initial check if already connected from a previous session
+    if (_appKitModal!.isConnected) {
+      if (mounted) {
+        context.read<WalletBloc>().add(WalletCheckStatusEvent());
+      }
+    }
   }
 
   @override
   void dispose() {
+    _appKitModal?.onModalConnect.unsubscribeAll();
+    _appKitModal?.onModalDisconnect.unsubscribeAll();
     _devAddressController.dispose();
     super.dispose();
   }
