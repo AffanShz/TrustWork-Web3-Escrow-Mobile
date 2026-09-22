@@ -22,20 +22,21 @@ class WalletRepositoryImpl implements WalletRepository {
   }
 
   Future<Either<Failure, WalletInfo>> getCurrentInfo() async {
-    try {
-      final address = walletDataSource.currentAddress;
-      if (address == null || address.isEmpty) {
-        return const Left(WalletNotConnectedFailure());
-      }
-      final balance = await web3DataSource.getUsdcBalance(address);
-      return Right(WalletInfo(
-        address: address,
-        usdcBalance: balance,
-        isConnected: true,
-      ));
-    } catch (e) {
-      return Left(BlockchainFailure(message: e.toString()));
+    final address = walletDataSource.currentAddress;
+    if (address == null || address.isEmpty) {
+      return const Left(WalletNotConnectedFailure());
     }
+    double balance = 0;
+    try {
+      balance = await web3DataSource.getUsdcBalance(address);
+    } catch (_) {
+      // Balance fetch failure should not disconnect the wallet
+    }
+    return Right(WalletInfo(
+      address: address,
+      usdcBalance: balance,
+      isConnected: true,
+    ));
   }
 
   @override
