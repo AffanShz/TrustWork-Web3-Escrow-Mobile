@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:convert/convert.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:reown_appkit/reown_appkit.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trustwork_mobile/core/config/env.dart';
 import 'package:trustwork_mobile/core/constants/contracts.dart';
 import 'package:trustwork_mobile/data/models/models.dart';
@@ -180,8 +181,16 @@ class IpfsRemoteDataSource {
 }
 
 class WalletConnectDataSource {
+  static const String _manualAddressKey = 'saved_manual_address';
   ReownAppKitModal? _appKitModal;
   String? _manualAddress;
+
+  Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _manualAddress = prefs.getString(_manualAddressKey);
+    } catch (_) {}
+  }
 
   ReownAppKitModal? get modal => _appKitModal;
   String? get currentAddress {
@@ -195,10 +204,16 @@ class WalletConnectDataSource {
 
   void setManualAddress(String address) {
     _manualAddress = address;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString(_manualAddressKey, address);
+    }).catchError((_) {});
   }
 
   void disconnect() {
     _manualAddress = null;
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.remove(_manualAddressKey);
+    }).catchError((_) {});
     _appKitModal?.disconnect();
   }
 

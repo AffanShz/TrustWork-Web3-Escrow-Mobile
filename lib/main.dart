@@ -43,7 +43,7 @@ class TrustWorkApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider(
-          create: (context) => sl<WalletBloc>()..add(WalletCheckStatusEvent()),
+          create: (context) => sl<WalletBloc>(),
         ),
         BlocProvider(
           create: (context) => sl<ProjectsBloc>(),

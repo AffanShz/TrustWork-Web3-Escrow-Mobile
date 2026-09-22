@@ -20,6 +20,7 @@ class ConnectWalletScreen extends StatefulWidget {
 class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
   final TextEditingController _devAddressController = TextEditingController();
   bool _appKitInitialized = false;
+  bool _isCheckingSession = true;
   ReownAppKitModal? _appKitModal;
 
   @override
@@ -62,13 +63,14 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
       }
     });
 
-    setState(() => _appKitInitialized = true);
-
-    // Initial check if already connected from a previous session
-    if (_appKitModal!.isConnected) {
-      if (mounted) {
-        context.read<WalletBloc>().add(WalletCheckStatusEvent());
-      }
+    if (mounted) {
+      // Recheck the status now that AppKit and SharedPreferences are loaded
+      context.read<WalletBloc>().add(WalletCheckStatusEvent());
+      
+      setState(() {
+        _appKitInitialized = true;
+        _isCheckingSession = false;
+      });
     }
   }
 
@@ -86,6 +88,51 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
       builder: (context, state) {
         if (state is WalletConnectedState) {
           return const ProjectListScreen();
+        }
+
+        if (_isCheckingSession) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [TrustWorkTheme.accent, Color(0xFF3B82F6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: TrustWorkTheme.accentGlow,
+                          blurRadius: 20,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.flash_on_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: TrustWorkTheme.accent,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         return Scaffold(

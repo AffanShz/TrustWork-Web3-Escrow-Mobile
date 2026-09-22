@@ -15,7 +15,10 @@ Future<void> initDI() async {
   sl.registerLazySingleton(() => Web3RemoteDataSource());
   sl.registerLazySingleton(() => SupabaseRemoteDataSource());
   sl.registerLazySingleton(() => IpfsRemoteDataSource());
-  sl.registerLazySingleton(() => WalletConnectDataSource());
+  
+  final walletDataSource = WalletConnectDataSource();
+  await walletDataSource.init();
+  sl.registerLazySingleton(() => walletDataSource);
 
   // Repositories
   sl.registerLazySingleton<WalletRepository>(() => WalletRepositoryImpl(
