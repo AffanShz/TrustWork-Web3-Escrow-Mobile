@@ -27,6 +27,8 @@ class RefreshProjectsEvent extends ProjectsEvent {
   List<Object?> get props => [address];
 }
 
+class ResetProjectsEvent extends ProjectsEvent {}
+
 // --- States ---
 abstract class ProjectsState extends Equatable {
   const ProjectsState();
@@ -62,6 +64,7 @@ class ProjectsBloc extends Bloc<ProjectsEvent, ProjectsState> {
   ProjectsBloc({required this.getProjectsUseCase}) : super(ProjectsInitialState()) {
     on<FetchProjectsEvent>(_onFetchProjects);
     on<RefreshProjectsEvent>(_onRefreshProjects);
+    on<ResetProjectsEvent>((event, emit) => emit(ProjectsInitialState()));
   }
 
   Future<void> _onFetchProjects(
