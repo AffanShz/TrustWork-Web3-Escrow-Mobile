@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:reown_appkit/reown_appkit.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/constants/contracts.dart';
+import '../../../core/di/injection_container.dart';
 import '../../../core/widgets/pressable_scale.dart';
 import '../../../core/widgets/fade_slide_in.dart';
 import '../../../core/widgets/shimmer_box.dart';
+import '../../../data/datasources/datasources.dart';
 import '../../../domain/entities/entities.dart';
 import '../../blocs/wallet/wallet_bloc.dart';
 import '../../blocs/projects/projects_bloc.dart';
@@ -108,8 +111,51 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                     ),
                     const SizedBox(width: 6),
                     GestureDetector(
-                      onTap: () {
-                        context.read<WalletBloc>().add(WalletDisconnectEvent());
+                      onTap: () async {
+                        final confirmed = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            backgroundColor: TrustWorkTheme.card,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: const BorderSide(color: TrustWorkTheme.border),
+                            ),
+                            title: const Text(
+                              'Disconnect Wallet?',
+                              style: TextStyle(
+                                color: TrustWorkTheme.textPrimary,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            content: const Text(
+                              'Anda akan keluar dari sesi wallet saat ini.',
+                              style: TextStyle(
+                                color: TrustWorkTheme.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext, false),
+                                child: const Text(
+                                  'Batal',
+                                  style: TextStyle(color: TrustWorkTheme.textSecondary),
+                                ),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext, true),
+                                child: const Text(
+                                  'Disconnect',
+                                  style: TextStyle(color: TrustWorkTheme.danger),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmed == true && context.mounted) {
+                          context.read<ProjectsBloc>().add(ResetProjectsEvent());
+                          context.read<WalletBloc>().add(WalletDisconnectEvent());
+                        }
                       },
                       child: const Icon(Icons.logout_rounded, size: 15, color: TrustWorkTheme.textMuted),
                     ),
@@ -264,31 +310,68 @@ class _ProjectListScreenState extends State<ProjectListScreen> {
                           ),
                         ),
                         const SizedBox(height: 14),
-                        Row(
-                          children: [
-                            Container(
-                              width: 7,
-                              height: 7,
-                              decoration: const BoxDecoration(
-                                color: TrustWorkTheme.success,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'Sepolia Network',
-                              style: TextStyle(fontSize: 11, color: TrustWorkTheme.textSecondary),
-                            ),
-                            const Spacer(),
-                            Text(
-                              'Contract: ${trustWorkAddress.substring(0, 6)}...${trustWorkAddress.substring(trustWorkAddress.length - 4)}',
-                              style: const TextStyle(
-                                fontSize: 11,
-                                fontFamily: 'monospace',
-                                color: TrustWorkTheme.textMuted,
-                              ),
-                            ),
-                          ],
+                        Builder(
+                          builder: (context) {
+                            final appKit = sl<WalletConnectDataSource>().modal;
+                            return Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              children: [
+                                if (appKit != null)
+                                  AppKitModalNetworkSelectButton(
+                                    appKit: appKit,
+                                    size: BaseButtonSize.small,
+                                  )
+                                else
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 7,
+                                        height: 7,
+                                        decoration: const BoxDecoration(
+                                          color: TrustWorkTheme.success,
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      const Text(
+                                        'Sepolia Testnet (USDC)',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: TrustWorkTheme.textSecondary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: TrustWorkTheme.surface,
+                                    borderRadius: BorderRadius.circular(6),
+                                    border: Border.all(color: TrustWorkTheme.border),
+                                  ),
+                                  child: const Text(
+                                    'USDC · 18 dec',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: TrustWorkTheme.textSecondary,
+                                    ),
+                                  ),
+                                ),
+                                Text(
+                                  'Contract: ${trustWorkAddress.substring(0, 6)}...${trustWorkAddress.substring(trustWorkAddress.length - 4)}',
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontFamily: 'monospace',
+                                    color: TrustWorkTheme.textMuted,
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ],
                     ),
