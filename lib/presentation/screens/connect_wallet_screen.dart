@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/config/env.dart';
+import '../../core/di/injection_container.dart';
 import '../../core/widgets/pressable_scale.dart';
 import '../../core/widgets/fade_slide_in.dart';
 import '../blocs/wallet/wallet_bloc.dart';
-import '../../core/di/injection_container.dart';
 import '../../data/datasources/datasources.dart';
 import 'projects/project_list_screen.dart';
 
@@ -30,6 +30,18 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
   }
 
   Future<void> _initWalletConnect() async {
+    // Ensure Sepolia is available as a selectable network choice
+    ReownAppKitModalNetworks.addSupportedNetworks('eip155', [
+      ReownAppKitModalNetworkInfo(
+        name: 'Sepolia Testnet (USDC)',
+        chainId: '11155111',
+        currency: 'USDC',
+        rpcUrl: Env.rpcUrl,
+        explorerUrl: 'https://sepolia.etherscan.io',
+        isTestNetwork: true,
+      ),
+    ]);
+
     _appKitModal = ReownAppKitModal(
       context: context,
       projectId: Env.walletConnectProjectId,
@@ -84,7 +96,14 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<WalletBloc, WalletState>(
+    return BlocConsumer<WalletBloc, WalletState>(
+      listener: (context, state) {
+        if (state is WalletDisconnectedState) {
+          _devAddressController.clear();
+          // Pop any pushed child screens (e.g. details, create project) back to root
+          Navigator.of(context).popUntil((route) => route.isFirst);
+        }
+      },
       builder: (context, state) {
         if (state is WalletConnectedState) {
           return const ProjectListScreen();
@@ -233,11 +252,15 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
                                   ),
                                 ),
                                 const SizedBox(height: 16),
-                                if (_appKitInitialized && _appKitModal != null)
+                                if (_appKitInitialized && _appKitModal != null) ...[
                                   AppKitModalConnectButton(
                                     appKit: _appKitModal!,
-                                  )
-                                else
+                                  ),
+                                  const SizedBox(height: 12),
+                                  AppKitModalNetworkSelectButton(
+                                    appKit: _appKitModal!,
+                                  ),
+                                ] else
                                   const Center(
                                     child: Padding(
                                       padding: EdgeInsets.all(12.0),
