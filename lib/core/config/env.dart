@@ -18,4 +18,10 @@ class Env {
 
   static int get chainId =>
       int.tryParse(dotenv.env['CHAIN_ID'] ?? '11155111') ?? 11155111;
+
+  static String get trustWorkAddress =>
+      dotenv.env['TRUSTWORK_ADDRESS'] ?? '0x3D7046882EaD50d7808d51084b843819bCE8202C';
+
+  static String get mockUsdcAddress =>
+      dotenv.env['MOCKUSDC_ADDRESS'] ?? '0x3c44dd9F3F9d25acd335383cDcd8Bf487B5c57F8';
 }

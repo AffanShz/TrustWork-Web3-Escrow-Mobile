@@ -1,5 +1,7 @@
-const String trustWorkAddress = '0x3D7046882EaD50d7808d51084b843819bCE8202C';
-const String mockUsdcAddress = '0x3c44dd9F3F9d25acd335383cDcd8Bf487B5c57F8';
+import '../config/env.dart';
+
+final String trustWorkAddress = Env.trustWorkAddress;
+final String mockUsdcAddress = Env.mockUsdcAddress;
 
 const String trustWorkAbi = '''[
   {"inputs":[{"internalType":"address","name":"_defaultArbiter","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
