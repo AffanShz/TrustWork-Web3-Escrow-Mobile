@@ -209,16 +209,48 @@ class WalletConnectDataSource {
     }).catchError((_) {});
   }
 
-  void disconnect() {
+  Future<void> disconnect() async {
     _manualAddress = null;
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.remove(_manualAddressKey);
-    }).catchError((_) {});
-    _appKitModal?.disconnect();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_manualAddressKey);
+    } catch (_) {}
+    if (_appKitModal != null) {
+      await _appKitModal!.disconnect();
+    }
   }
 
   void setModal(ReownAppKitModal modal) {
     _appKitModal = modal;
+  }
+
+  static String get _sepoliaCaip2 => 'eip155:${Env.chainId}';
+
+  Future<void> _switchToSepolia() async {
+    if (_appKitModal == null || !_appKitModal!.isConnected) {
+      throw Exception('Wallet not connected');
+    }
+    final topic = _appKitModal!.session!.topic;
+    if (topic == null) throw Exception('No active session');
+
+    final currentChain = _appKitModal!.selectedChain?.chainId;
+    if (currentChain == _sepoliaCaip2) return;
+
+    try {
+      await _appKitModal!.request(
+        topic: topic,
+        chainId: currentChain ?? _sepoliaCaip2,
+        request: SessionRequestParams(
+          method: 'wallet_switchEthereumChain',
+          params: [
+            {'chainId': '0x${Env.chainId.toRadixString(16)}'}
+          ],
+        ),
+      );
+    } catch (_) {
+      throw Exception(
+          'Gagal switch jaringan. Silakan pindah wallet ke Sepolia testnet secara manual.');
+    }
   }
 
   Future<String> sendTransaction(String to, String data, {String value = '0x0'}) async {
@@ -231,13 +263,14 @@ class WalletConnectDataSource {
       throw Exception('Wallet not connected');
     }
 
+    await _switchToSepolia();
+
     final topic = _appKitModal!.session?.topic;
-    final chainId = _appKitModal!.selectedChain?.chainId ?? 'eip155:${Env.chainId}';
     if (topic == null) throw Exception('No active session');
 
     final result = await _appKitModal!.request(
       topic: topic,
-      chainId: chainId,
+      chainId: _sepoliaCaip2,
       request: SessionRequestParams(
         method: 'eth_sendTransaction',
         params: [

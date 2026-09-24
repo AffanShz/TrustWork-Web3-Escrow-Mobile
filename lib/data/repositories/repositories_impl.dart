@@ -50,7 +50,7 @@ class WalletRepositoryImpl implements WalletRepository {
 
   @override
   Future<void> disconnect() async {
-    walletDataSource.disconnect();
+    await walletDataSource.disconnect();
   }
 
   @override
