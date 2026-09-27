@@ -45,6 +45,9 @@ app.*.map.json
 .env.*
 !.env.example
 
+# Local planning & internal docs (not for public repo)
+/plan/
+
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
