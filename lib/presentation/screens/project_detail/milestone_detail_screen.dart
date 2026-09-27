@@ -38,14 +38,31 @@ class _MilestoneDetailScreenState extends State<MilestoneDetailScreen> {
   }
 
   Future<void> _pickAndSubmitEvidence(String milestoneId) async {
-    final result = await FilePicker.pickFiles();
+    final result = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'png', 'jpg', 'jpeg', 'zip', 'doc', 'docx', 'txt'],
+    );
     if (result == null || result.files.single.path == null) return;
+    
+    final file = result.files.single;
+    const maxSizeBytes = 25 * 1024 * 1024; // 25 MB limit
+    if (file.size > maxSizeBytes) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ukuran file melebihi batas maksimal (25 MB).'),
+          backgroundColor: TrustWorkTheme.danger,
+        ),
+      );
+      return;
+    }
+
     if (!mounted) return;
 
     context.read<ProjectDetailBloc>().add(
           SubmitEvidenceEvent(
             milestoneDbId: milestoneId,
-            filePath: result.files.single.path!,
+            filePath: file.path!,
           ),
         );
   }
