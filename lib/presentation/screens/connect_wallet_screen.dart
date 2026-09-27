@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // added for kDebugMode
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reown_appkit/reown_appkit.dart';
 import '../../core/theme/app_theme.dart';
@@ -278,87 +279,89 @@ class _ConnectWalletScreenState extends State<ConnectWalletScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
-                        FadeSlideIn(
-                          delay: const Duration(milliseconds: 250),
-                          child: Row(
-                            children: const [
-                              Expanded(child: Divider(color: TrustWorkTheme.borderSubtle)),
-                              Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 14),
-                                child: Text(
-                                  'OR DEV TESTNET LOGIN',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: TrustWorkTheme.textMuted,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 0.8,
-                                  ),
-                                ),
-                              ),
-                              Expanded(child: Divider(color: TrustWorkTheme.borderSubtle)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        FadeSlideIn(
-                          delay: const Duration(milliseconds: 300),
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: TrustWorkTheme.card,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: TrustWorkTheme.border),
-                            ),
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              children: [
-                                TextField(
-                                  controller: _devAddressController,
-                                  decoration: const InputDecoration(
-                                    hintText: 'Enter 0x address for testing...',
-                                    prefixIcon: Icon(Icons.code_rounded, color: TrustWorkTheme.textMuted, size: 20),
-                                  ),
-                                  style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
-                                ),
-                                const SizedBox(height: 12),
-                                PressableScale(
-                                  onPressed: () {
-                                    final text = _devAddressController.text.trim();
-                                    if (text.isNotEmpty && text.startsWith('0x') && text.length == 42) {
-                                      context.read<WalletBloc>().add(WalletSetManualAddressEvent(text));
-                                    } else {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Masukkan alamat Ethereum valid 42 karakter (0x...)'),
-                                          backgroundColor: TrustWorkTheme.danger,
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    decoration: BoxDecoration(
-                                      color: TrustWorkTheme.surface,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: TrustWorkTheme.border),
+                        if (kDebugMode) ...[
+                          const SizedBox(height: 24),
+                          FadeSlideIn(
+                            delay: const Duration(milliseconds: 250),
+                            child: Row(
+                              children: const [
+                                Expanded(child: Divider(color: TrustWorkTheme.borderSubtle)),
+                                Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 14),
+                                  child: Text(
+                                    'OR DEV TESTNET LOGIN',
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: TrustWorkTheme.textMuted,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.8,
                                     ),
-                                    child: const Center(
-                                      child: Text(
-                                        'Connect with Address (Demo Mode)',
-                                        style: TextStyle(
-                                          color: TrustWorkTheme.textPrimary,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
+                                  ),
+                                ),
+                                Expanded(child: Divider(color: TrustWorkTheme.borderSubtle)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          FadeSlideIn(
+                            delay: const Duration(milliseconds: 300),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: TrustWorkTheme.card,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: TrustWorkTheme.border),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  TextField(
+                                    controller: _devAddressController,
+                                    decoration: const InputDecoration(
+                                      hintText: 'Enter 0x address for testing...',
+                                      prefixIcon: Icon(Icons.code_rounded, color: TrustWorkTheme.textMuted, size: 20),
+                                    ),
+                                    style: const TextStyle(fontSize: 13, fontFamily: 'monospace'),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  PressableScale(
+                                    onPressed: () {
+                                      final text = _devAddressController.text.trim();
+                                      if (text.isNotEmpty && text.startsWith('0x') && text.length == 42) {
+                                        context.read<WalletBloc>().add(WalletSetManualAddressEvent(text));
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Masukkan alamat Ethereum valid 42 karakter (0x...)'),
+                                            backgroundColor: TrustWorkTheme.danger,
+                                          ),
+                                        );
+                                      }
+                                    },
+                                    child: Container(
+                                      width: double.infinity,
+                                      padding: const EdgeInsets.symmetric(vertical: 14),
+                                      decoration: BoxDecoration(
+                                        color: TrustWorkTheme.surface,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(color: TrustWorkTheme.border),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          'Connect with Address (Demo Mode)',
+                                          style: TextStyle(
+                                            color: TrustWorkTheme.textPrimary,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 20),
