@@ -34,18 +34,13 @@ class CreateEscrowProjectUseCase {
       return const Left(ValidationFailure(message: 'Total milestone percentages must be exactly 100%'));
     }
 
-    // 2. Fetch on-chain count for new project ID
-    final countResult = await projectRepository.getProjectCount();
-    if (countResult.isLeft) return Left(countResult.left!);
-    final newProjectId = countResult.right!;
-
-    // 3. Approve USDC token
-    final amountBigInt = _toWei18(totalAmount);
+    // 2. Approve USDC token
+    final amountBigInt = _toWei18(totalAmount.toString());
     final approveResult = await projectRepository.approveUsdc(amountBigInt);
     if (approveResult.isLeft) return Left(approveResult.left!);
     await projectRepository.waitForTransaction(approveResult.right!);
 
-    // 4. Create Project on-chain
+    // 3. Create Project on-chain
     final pctBigIntList = milestones.map((m) => BigInt.from(m.percentage)).toList();
     final createResult = await projectRepository.createProjectOnChain(
       workerAddress: workerAddress,
@@ -53,7 +48,14 @@ class CreateEscrowProjectUseCase {
       milestonePercentages: pctBigIntList,
     );
     if (createResult.isLeft) return Left(createResult.left!);
-    await projectRepository.waitForTransaction(createResult.right!);
+    final txHash = createResult.right!;
+    await projectRepository.waitForTransaction(txHash);
+
+    // 4. Resolve exact on-chain project ID from the transaction receipt
+    // to prevent race conditions when multiple projects are created simultaneously.
+    final idResult = await projectRepository.getCreatedProjectIdFromReceipt(txHash);
+    if (idResult.isLeft) return Left(idResult.left!);
+    final newProjectId = idResult.right!;
 
     // 5. Store Project in Supabase
     final newProject = ProjectEntity(
@@ -83,12 +85,38 @@ class CreateEscrowProjectUseCase {
     return Right(savedProject);
   }
 
-  BigInt _toWei18(double amount) {
-    final str = amount.toStringAsFixed(6);
-    final parts = str.split('.');
-    final whole = BigInt.parse(parts[0]);
-    final dec = parts[1].padRight(18, '0');
-    return whole * BigInt.from(10).pow(18) + BigInt.parse(dec);
+  /// Converts a token amount to raw wei (18 decimals) using string math only.
+  ///
+  /// [M-5] Previously this took a [double] and went through
+  /// `amount.toStringAsFixed(6)`, which risks binary floating-point rounding
+  /// (e.g. 1.005 -> "1.004999...") and therefore a wrong wei amount. Working
+  /// from a decimal string keeps the exact human-typed value intact end to end.
+  BigInt _toWei18(String amount) {
+    final trimmed = amount.trim();
+    if (trimmed.isEmpty) {
+      throw const FormatException('Nilai amount tidak boleh kosong.');
+    }
+
+    final parts = trimmed.split('.');
+    final wholePart = parts[0];
+    String decPart = parts.length > 1 ? parts[1] : '';
+
+    if (wholePart.isEmpty && decPart.isEmpty) {
+      throw FormatException('Nilai amount tidak valid: "$trimmed".');
+    }
+    if (int.tryParse(wholePart) == null && wholePart.isNotEmpty) {
+      throw FormatException('Nilai amount tidak valid: "$trimmed".');
+    }
+
+    final whole = wholePart.isEmpty ? BigInt.zero : BigInt.parse(wholePart);
+    // Pad/truncate the fractional part to exactly 18 decimals.
+    if (decPart.length > 18) {
+      decPart = decPart.substring(0, 18);
+    }
+    decPart = decPart.padRight(18, '0');
+    final dec = decPart.isEmpty ? BigInt.zero : BigInt.parse(decPart);
+
+    return whole * BigInt.from(10).pow(18) + dec;
   }
 }
 

@@ -66,10 +66,50 @@ class Web3RemoteDataSource {
     for (int i = 0; i < 30; i++) {
       try {
         final receipt = await _client.getTransactionReceipt(txHash);
-        if (receipt != null) return;
-      } catch (_) {}
+        if (receipt != null) {
+          if (receipt.status == true) {
+            return; // Success
+          } else {
+            throw Exception("Transaksi revert di blockchain (status 0).");
+          }
+        }
+      } catch (e) {
+        if (e.toString().contains("Transaksi revert")) {
+          rethrow;
+        }
+      }
       await Future.delayed(const Duration(seconds: 2));
     }
+    throw Exception("Transaksi timeout menunggu konfirmasi (hash: $txHash).");
+  }
+
+  /// Parses the `ProjectCreated` event from a transaction receipt to extract
+  /// the authoritative on-chain project ID. Falls back to `projectCount - 1`
+  /// if the event cannot be found.
+  Future<int> getCreatedProjectIdFromReceipt(String txHash) async {
+    final receipt = await _client.getTransactionReceipt(txHash);
+    if (receipt == null) {
+      throw Exception('Receipt tidak ditemukan untuk tx: $txHash');
+    }
+
+    final event = _trustWorkContract.event('ProjectCreated');
+    final topic = '0x${hex.encode(event.signature)}';
+
+    for (final log in receipt.logs) {
+      final topics = log.topics;
+      if (topics != null && topics.isNotEmpty && topics.first == topic) {
+        // projectId is the first indexed topic (topics[1])
+        if (topics.length > 1 && topics[1] != null) {
+          final projectIdHex = topics[1]!;
+          final cleanHex = projectIdHex.startsWith('0x') ? projectIdHex.substring(2) : projectIdHex;
+          return BigInt.parse(cleanHex, radix: 16).toInt();
+        }
+      }
+    }
+
+    // Fallback: read projectCount after tx is confirmed
+    final count = await getProjectCount();
+    return count - 1;
   }
 
   String encodeApproveUsdc(BigInt amount) {

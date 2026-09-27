@@ -32,6 +32,7 @@ abstract class ProjectRepository {
     required int workerPct,
   });
   Future<Either<Failure, void>> waitForTransaction(String txHash);
+  Future<Either<Failure, int>> getCreatedProjectIdFromReceipt(String txHash);
 }
 
 abstract class MilestoneRepository {

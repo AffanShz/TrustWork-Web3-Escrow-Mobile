@@ -208,6 +208,20 @@ class ProjectRepositoryImpl implements ProjectRepository {
       return Left(BlockchainFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, int>> getCreatedProjectIdFromReceipt(String txHash) async {
+    try {
+      if (txHash.startsWith('0xsimulated')) {
+        final count = await web3DataSource.getProjectCount();
+        return Right(count);
+      }
+      final id = await web3DataSource.getCreatedProjectIdFromReceipt(txHash);
+      return Right(id);
+    } catch (e) {
+      return Left(BlockchainFailure(message: e.toString()));
+    }
+  }
 }
 
 class MilestoneRepositoryImpl implements MilestoneRepository {
