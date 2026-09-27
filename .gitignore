@@ -46,7 +46,7 @@ app.*.map.json
 !.env.example
 
 # Local planning & internal docs (not for public repo)
-/plan/
+plan/
 
 # Android Studio will place build artifacts here
 /android/app/debug

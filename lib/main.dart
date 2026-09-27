@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,12 +15,40 @@ import 'presentation/screens/connect_wallet_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // [H-4] Fail-fast configuration loading.
+  // Debug mode: allow .env.example fallback for local development convenience.
+  // Release mode: hard fail if .env or critical keys are missing — a silently
+  // misconfigured escrow app is far more dangerous than a crash on startup.
   try {
     await dotenv.load(fileName: '.env');
-  } catch (_) {
-    try {
-      await dotenv.load(fileName: '.env.example');
-    } catch (_) {}
+  } catch (e) {
+    if (kDebugMode) {
+      debugPrint('⚠️ .env gagal dimuat, mencoba .env.example (khusus debug): $e');
+      try {
+        await dotenv.load(fileName: '.env.example');
+      } catch (_) {}
+    } else {
+      throw StateError(
+        'Konfigurasi aplikasi tidak ditemukan: file .env gagal dimuat. '
+        'Build release memerlukan file .env yang valid.',
+      );
+    }
+  }
+
+  if (!kDebugMode) {
+    final missingKeys = <String>[
+      if (Env.supabaseUrl.isEmpty) 'SUPABASE_URL',
+      if (Env.supabaseAnonKey.isEmpty) 'SUPABASE_ANON_KEY',
+      if (Env.walletConnectProjectId.isEmpty) 'WALLETCONNECT_PROJECT_ID',
+      if (Env.trustWorkAddress.isEmpty) 'TRUSTWORK_ADDRESS',
+      if (Env.mockUsdcAddress.isEmpty) 'MOCKUSDC_ADDRESS',
+    ];
+    if (missingKeys.isNotEmpty) {
+      throw StateError(
+        'Konfigurasi wajib hilang dari .env: ${missingKeys.join(', ')}. '
+        'Isi semua variabel sebelum build release.',
+      );
+    }
   }
 
   if (Env.supabaseUrl.isNotEmpty && Env.supabaseAnonKey.isNotEmpty) {
